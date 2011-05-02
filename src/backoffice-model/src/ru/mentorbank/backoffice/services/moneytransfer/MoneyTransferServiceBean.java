@@ -1,7 +1,10 @@
 package ru.mentorbank.backoffice.services.moneytransfer;
 
 import ru.mentorbank.backoffice.dao.OperationDao;
+import ru.mentorbank.backoffice.model.Account;
+import ru.mentorbank.backoffice.model.Operation;
 import ru.mentorbank.backoffice.model.stoplist.JuridicalStopListRequest;
+import ru.mentorbank.backoffice.model.stoplist.PhysicalStopListRequest;
 import ru.mentorbank.backoffice.model.stoplist.StopListInfo;
 import ru.mentorbank.backoffice.model.stoplist.StopListStatus;
 import ru.mentorbank.backoffice.model.transfer.AccountInfo;
@@ -63,9 +66,20 @@ public class MoneyTransferServiceBean implements MoneyTransferSerice {
 			dstStopListInfo = getStopListInfo(request.getDstAccount());
 		}
 
-		private void saveOperation() {
-			// TODO: Необходимо сделать вызов операции saveOperation и сделать
-			// соответствующий тест вызова операции operationDao.saveOperation()
+		private void saveOperation() throws TransferException {
+			Operation operation = new Operation();
+			Account srcAccount=new Account();
+			srcAccount.setAccountNumber(request.getSrcAccount().getAccountNumber());
+			Account dstAccount=new Account();
+			dstAccount.setAccountNumber(request.getDstAccount().getAccountNumber());
+			operation.setDstAccount(srcAccount);
+			operation.setDstAccount(dstAccount);
+			try{
+				operationDao.saveOperation(operation);
+			} catch (Exception ex) {
+                throw new TransferException(ex.getMessage());
+            }
+		
 		}
 
 		private void transferDo() throws TransferException {
@@ -90,7 +104,17 @@ public class MoneyTransferServiceBean implements MoneyTransferSerice {
 						.getJuridicalStopListInfo(request);
 				return stopListInfo;
 			} else if (accountInfo instanceof PhysicalAccountInfo) {
-				// TODO: Сделать вызов stopListService для физических лиц
+				PhysicalAccountInfo physicalAccountInfo = (PhysicalAccountInfo) accountInfo;
+				PhysicalStopListRequest request = new PhysicalStopListRequest();
+				request.setDocumentSeries(physicalAccountInfo.getDocumentSeries());
+				request.setDocumentNumber(physicalAccountInfo.getDocumentNumber());
+				request.setFirstname(physicalAccountInfo.getFirstname());
+				request.setLastname(physicalAccountInfo.getLastname());
+				request.setMiddlename(physicalAccountInfo.getMiddlename());
+				
+				StopListInfo stopListInfo = stopListService
+						.getPhysicalStopListInfo(request);
+				return stopListInfo;
 			}
 			return null;
 		}
